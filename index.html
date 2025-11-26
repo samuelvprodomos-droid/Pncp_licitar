@@ -151,6 +151,10 @@
             background: linear-gradient(145deg, #28a745, #1e7e34);
         }
         
+        .btn-warning {
+            background: linear-gradient(145deg, #ffc107, #e0a800);
+        }
+        
         .btn-danger {
             background: linear-gradient(145deg, #dc3545, #c82333);
         }
@@ -291,6 +295,10 @@
             background-color: #e74c3c;
         }
         
+        .notification.warning {
+            background-color: #f39c12;
+        }
+        
         .icon-preview {
             display: flex;
             align-items: center;
@@ -314,6 +322,51 @@
             background-color: #e9ecef;
             border-radius: 5px;
             font-size: 14px;
+        }
+        
+        .file-input-container {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-input-container input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #e9ecef;
+            border-color: var(--primary-color);
+        }
+        
+        .file-input-label i {
+            margin-right: 8px;
+        }
+        
+        .import-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
         }
     </style>
 </head>
@@ -394,6 +447,22 @@
                     <button class="btn btn-success" id="saveTemplateBtn">Salvar Modelo</button>
                     <button class="btn btn-danger" id="deleteTemplateBtn" style="display: none;">Excluir Modelo</button>
                 </div>
+                
+                <div class="import-section">
+                    <h3>Importar Modelo</h3>
+                    <div class="form-group">
+                        <div class="file-input-container">
+                            <div class="file-input-label">
+                                <i class="fas fa-file-import"></i>
+                                Carregar Modelo .btn
+                            </div>
+                            <input type="file" id="importFile" accept=".btn">
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-warning" id="importBtn" disabled>Importar Modelo</button>
+                    </div>
+                </div>
             </div>
             
             <div class="preview-section">
@@ -455,6 +524,8 @@
         const templatesGrid = document.getElementById('templatesGrid');
         const selectAllBtn = document.getElementById('selectAllBtn');
         const generateSelectedBtn = document.getElementById('generateSelectedBtn');
+        const importFileInput = document.getElementById('importFile');
+        const importBtn = document.getElementById('importBtn');
         const notification = document.getElementById('notification');
 
         // Ícones pré-definidos (Font Awesome)
@@ -469,6 +540,7 @@
 
         // Variáveis globais
         let currentTemplateId = null;
+        let importedFileContent = null;
 
         // Event Listeners
         templateSelect.addEventListener('change', function() {
@@ -507,6 +579,32 @@
         downloadBtn.addEventListener('click', downloadFile);
         selectAllBtn.addEventListener('click', selectAllTemplates);
         generateSelectedBtn.addEventListener('click', generateSelectedTemplates);
+
+        // Event listeners para importação de arquivos
+        importFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                importBtn.disabled = true;
+                return;
+            }
+            
+            // Verificar se é um arquivo .btn
+            if (!file.name.endsWith('.btn')) {
+                showNotification('Por favor, selecione um arquivo .btn válido!', 'error');
+                importBtn.disabled = true;
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                importedFileContent = e.target.result;
+                importBtn.disabled = false;
+                showNotification('Arquivo carregado com sucesso! Clique em "Importar Modelo" para continuar.', 'success');
+            };
+            reader.readAsText(file);
+        });
+
+        importBtn.addEventListener('click', importModelFromFile);
 
         // Carregar modelos salvos
         loadTemplates();
@@ -748,6 +846,60 @@
             updateTemplateSelect();
         }
 
+        // Função para importar modelo de arquivo .btn
+        function importModelFromFile() {
+            if (!importedFileContent) {
+                showNotification('Nenhum arquivo carregado para importar!', 'error');
+                return;
+            }
+            
+            try {
+                // Tentar analisar o conteúdo do arquivo como JSON
+                const template = JSON.parse(importedFileContent);
+                
+                // Validar se tem os campos necessários
+                if (!template.name || !template.text) {
+                    throw new Error('Formato de arquivo inválido. Campos obrigatórios ausentes.');
+                }
+                
+                // Preencher o formulário com os dados importados
+                buttonNameInput.value = template.name;
+                buttonLinkInput.value = template.link || '';
+                buttonTextInput.value = template.text;
+                color1Input.value = template.color1 || '#3498db';
+                color2Input.value = template.color2 || '#2573a7';
+                iconTypeSelect.value = template.iconType || 'none';
+                
+                if (template.iconType === 'custom') {
+                    customIconGroup.style.display = 'block';
+                    customIconUrlInput.value = template.customIconUrl || '';
+                } else {
+                    customIconGroup.style.display = 'none';
+                }
+                
+                // Atualizar preview e código
+                updatePreview();
+                generateCode();
+                
+                // Limpar o input de arquivo
+                importFileInput.value = '';
+                importBtn.disabled = true;
+                importedFileContent = null;
+                
+                // Selecionar "Novo modelo" no dropdown
+                templateSelect.value = 'new';
+                modelInfo.style.display = 'none';
+                deleteTemplateBtn.style.display = 'none';
+                currentTemplateId = null;
+                
+                showNotification(`Modelo "${template.name}" importado com sucesso!`, 'success');
+                
+            } catch (error) {
+                showNotification('Erro ao importar o arquivo: ' + error.message, 'error');
+                console.error('Erro ao importar:', error);
+            }
+        }
+
         // Função para selecionar todos os templates
         function selectAllTemplates() {
             const checkboxes = document.querySelectorAll('.template-checkbox');
@@ -847,6 +999,8 @@
             notification.className = 'notification';
             if (type === 'error') {
                 notification.classList.add('error');
+            } else if (type === 'warning') {
+                notification.classList.add('warning');
             }
             notification.classList.add('show');
             
