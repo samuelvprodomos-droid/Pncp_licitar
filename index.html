@@ -113,6 +113,15 @@
             background-color: #f8f9fa;
         }
         
+        .size-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .size-input {
+            flex: 1;
+        }
+        
         .color-group {
             display: flex;
             gap: 10px;
@@ -159,6 +168,14 @@
             background: linear-gradient(145deg, #dc3545, #c82333);
         }
         
+        .btn-info {
+            background: linear-gradient(145deg, #17a2b8, #138496);
+        }
+        
+        .btn-purple {
+            background: linear-gradient(145deg, #6f42c1, #59359c);
+        }
+        
         .preview-container {
             display: flex;
             justify-content: center;
@@ -180,10 +197,12 @@
             display: flex;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
         
         .action-buttons .btn {
             flex: 1;
+            min-width: 120px;
         }
         
         .templates-section {
@@ -199,11 +218,14 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .templates-controls {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .templates-grid {
@@ -303,8 +325,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 30px;
-            height: 30px;
             margin-right: 8px;
         }
         
@@ -368,6 +388,42 @@
             border-radius: 8px;
             border-left: 4px solid #ffc107;
         }
+        
+        .export-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .server-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #6f42c1;
+        }
+        
+        .range-input {
+            width: 100%;
+        }
+        
+        .range-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .server-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .server-input-group input {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -429,6 +485,20 @@
                 </div>
                 
                 <div class="form-group">
+                    <label>Tamanhos</label>
+                    <div class="size-group">
+                        <div class="size-input">
+                            <label for="fontSize">Tamanho da Fonte (px) <span id="fontSizeValue" class="range-value">13</span></label>
+                            <input type="range" id="fontSize" min="10" max="24" value="13" class="range-input">
+                        </div>
+                        <div class="size-input">
+                            <label for="iconSize">Tamanho do Ícone (px) <span id="iconSizeValue" class="range-value">20</span></label>
+                            <input type="range" id="iconSize" min="12" max="32" value="20" class="range-input">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
                     <label>Cores do Botão</label>
                     <div class="color-group">
                         <div class="color-input">
@@ -461,6 +531,25 @@
                     </div>
                     <div class="action-buttons">
                         <button class="btn btn-warning" id="importBtn" disabled>Importar Modelo</button>
+                    </div>
+                </div>
+                
+                <div class="server-section">
+                    <h3>Carregar do Servidor</h3>
+                    <div class="form-group">
+                        <label for="serverFileUrl">URL do Arquivo .btn no Servidor</label>
+                        <div class="server-input-group">
+                            <input type="text" id="serverFileUrl" placeholder="botoes.btn" value="botoes.btn">
+                            <button class="btn btn-purple" id="loadFromServerBtn">Carregar</button>
+                        </div>
+                        <small>Coloque o arquivo .btn no mesmo diretório do site e digite o nome do arquivo.</small>
+                    </div>
+                </div>
+                
+                <div class="export-section">
+                    <h3>Exportar Modelos</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-info" id="exportAllBtn">Exportar Todos os Modelos</button>
                     </div>
                 </div>
             </div>
@@ -512,6 +601,10 @@
         const iconTypeSelect = document.getElementById('iconType');
         const customIconGroup = document.getElementById('customIconGroup');
         const customIconUrlInput = document.getElementById('customIconUrl');
+        const fontSizeInput = document.getElementById('fontSize');
+        const iconSizeInput = document.getElementById('iconSize');
+        const fontSizeValue = document.getElementById('fontSizeValue');
+        const iconSizeValue = document.getElementById('iconSizeValue');
         const color1Input = document.getElementById('color1');
         const color2Input = document.getElementById('color2');
         const generateBtn = document.getElementById('generateBtn');
@@ -526,6 +619,9 @@
         const generateSelectedBtn = document.getElementById('generateSelectedBtn');
         const importFileInput = document.getElementById('importFile');
         const importBtn = document.getElementById('importBtn');
+        const exportAllBtn = document.getElementById('exportAllBtn');
+        const serverFileUrlInput = document.getElementById('serverFileUrl');
+        const loadFromServerBtn = document.getElementById('loadFromServerBtn');
         const notification = document.getElementById('notification');
 
         // Ícones pré-definidos (Font Awesome)
@@ -568,6 +664,16 @@
             updatePreview();
         });
 
+        fontSizeInput.addEventListener('input', function() {
+            fontSizeValue.textContent = this.value;
+            updatePreview();
+        });
+
+        iconSizeInput.addEventListener('input', function() {
+            iconSizeValue.textContent = this.value;
+            updatePreview();
+        });
+
         [buttonNameInput, buttonLinkInput, buttonTextInput, customIconUrlInput, color1Input, color2Input].forEach(input => {
             input.addEventListener('input', updatePreview);
         });
@@ -579,6 +685,8 @@
         downloadBtn.addEventListener('click', downloadFile);
         selectAllBtn.addEventListener('click', selectAllTemplates);
         generateSelectedBtn.addEventListener('click', generateSelectedTemplates);
+        exportAllBtn.addEventListener('click', exportAllTemplates);
+        loadFromServerBtn.addEventListener('click', loadFromServer);
 
         // Event listeners para importação de arquivos
         importFileInput.addEventListener('change', function(e) {
@@ -618,6 +726,10 @@
             iconTypeSelect.value = 'none';
             customIconGroup.style.display = 'none';
             customIconUrlInput.value = '';
+            fontSizeInput.value = '13';
+            fontSizeValue.textContent = '13';
+            iconSizeInput.value = '20';
+            iconSizeValue.textContent = '20';
             color1Input.value = '#3498db';
             color2Input.value = '#2573a7';
             updatePreview();
@@ -630,17 +742,19 @@
             const color1 = color1Input.value;
             const color2 = color2Input.value;
             const iconType = iconTypeSelect.value;
+            const fontSize = fontSizeInput.value;
+            const iconSize = iconSizeInput.value;
             
             let iconHTML = '';
             
             if (iconType === 'custom' && customIconUrlInput.value) {
-                iconHTML = `<img src="${customIconUrlInput.value}" alt="${text}" style="height:20px;margin-right:6px">`;
+                iconHTML = `<img src="${customIconUrlInput.value}" alt="${text}" style="height:${iconSize}px;margin-right:6px">`;
             } else if (iconType !== 'none' && iconType !== 'custom') {
-                iconHTML = `<div class="icon-preview">${predefinedIcons[iconType]}</div>`;
+                iconHTML = `<div class="icon-preview" style="font-size:${iconSize}px">${predefinedIcons[iconType]}</div>`;
             }
             
             const buttonHTML = `
-                <a href="${link}" style="display:flex;align-items:center;justify-content:center;width:140px;height:35px;border-radius:5px;font:600 13px 'Segoe UI',sans-serif;text-decoration:none;color:white;box-shadow:0 3px 6px rgba(0,0,0,0.15);background:linear-gradient(145deg,${color1},${color2});border:1px solid rgba(255,255,255,0.2);transition:all 0.3s;box-sizing:border-box">
+                <a href="${link}" style="display:flex;align-items:center;justify-content:center;width:140px;height:35px;border-radius:5px;font:600 ${fontSize}px 'Segoe UI',sans-serif;text-decoration:none;color:white;box-shadow:0 3px 6px rgba(0,0,0,0.15);background:linear-gradient(145deg,${color1},${color2});border:1px solid rgba(255,255,255,0.2);transition:all 0.3s;box-sizing:border-box">
                     ${iconHTML}${text}
                 </a>
             `;
@@ -657,16 +771,18 @@
             const color1 = color1Input.value;
             const color2 = color2Input.value;
             const iconType = iconTypeSelect.value;
+            const fontSize = fontSizeInput.value;
+            const iconSize = iconSizeInput.value;
             
             let iconHTML = '';
             
             if (iconType === 'custom' && customIconUrlInput.value) {
-                iconHTML = `<img src="${customIconUrlInput.value}" alt="${text}" style="height:20px;margin-right:6px">`;
+                iconHTML = `<img src="${customIconUrlInput.value}" alt="${text}" style="height:${iconSize}px;margin-right:6px">`;
             } else if (iconType !== 'none' && iconType !== 'custom') {
-                iconHTML = `<i class="fas fa-${iconType}" style="margin-right:6px"></i>`;
+                iconHTML = `<i class="fas fa-${iconType}" style="font-size:${iconSize}px;margin-right:6px"></i>`;
             }
             
-            const buttonHTML = `<a href="${link}" style="display:flex;align-items:center;justify-content:center;width:140px;height:35px;border-radius:5px;font:600 13px 'Segoe UI',sans-serif;text-decoration:none;color:white;box-shadow:0 3px 6px rgba(0,0,0,0.15);background:linear-gradient(145deg,${color1},${color2});border:1px solid rgba(255,255,255,0.2);transition:all 0.3s;box-sizing:border-box">${iconHTML}${text}</a>`;
+            const buttonHTML = `<a href="${link}" style="display:flex;align-items:center;justify-content:center;width:140px;height:35px;border-radius:5px;font:600 ${fontSize}px 'Segoe UI',sans-serif;text-decoration:none;color:white;box-shadow:0 3px 6px rgba(0,0,0,0.15);background:linear-gradient(145deg,${color1},${color2});border:1px solid rgba(255,255,255,0.2);transition:all 0.3s;box-sizing:border-box">${iconHTML}${text}</a>`;
             
             generatedCode.value = buttonHTML;
         }
@@ -680,6 +796,8 @@
             const color2 = color2Input.value;
             const iconType = iconTypeSelect.value;
             const customIconUrl = customIconUrlInput.value;
+            const fontSize = fontSizeInput.value;
+            const iconSize = iconSizeInput.value;
             
             const template = {
                 name,
@@ -688,7 +806,9 @@
                 color1,
                 color2,
                 iconType,
-                customIconUrl
+                customIconUrl,
+                fontSize,
+                iconSize
             };
             
             // Salvar no localStorage
@@ -755,8 +875,8 @@
                 templateItem.innerHTML = `
                     <input type="checkbox" class="template-checkbox" data-index="${index}">
                     <div class="template-preview">
-                        <a href="${template.link}" style="display:flex;align-items:center;justify-content:center;width:100px;height:25px;border-radius:3px;font:600 10px 'Segoe UI',sans-serif;text-decoration:none;color:white;background:linear-gradient(145deg,${template.color1},${template.color2});">
-                            ${template.iconType !== 'none' ? (template.iconType === 'custom' ? '<img src="' + template.customIconUrl + '" alt="" style="height:14px;margin-right:4px">' : predefinedIcons[template.iconType]) : ''}
+                        <a href="${template.link}" style="display:flex;align-items:center;justify-content:center;width:100px;height:25px;border-radius:3px;font:600 ${template.fontSize || '13'}px 'Segoe UI',sans-serif;text-decoration:none;color:white;background:linear-gradient(145deg,${template.color1},${template.color2});">
+                            ${template.iconType !== 'none' ? (template.iconType === 'custom' ? '<img src="' + template.customIconUrl + '" alt="" style="height:' + (template.iconSize || '20') + 'px;margin-right:4px">' : `<i class="fas fa-${template.iconType}" style="font-size:${template.iconSize || '20'}px;margin-right:4px"></i>`) : ''}
                             ${template.text}
                         </a>
                     </div>
@@ -802,6 +922,10 @@
             color1Input.value = template.color1;
             color2Input.value = template.color2;
             iconTypeSelect.value = template.iconType;
+            fontSizeInput.value = template.fontSize || '13';
+            fontSizeValue.textContent = template.fontSize || '13';
+            iconSizeInput.value = template.iconSize || '20';
+            iconSizeValue.textContent = template.iconSize || '20';
             
             if (template.iconType === 'custom') {
                 customIconGroup.style.display = 'block';
@@ -869,6 +993,10 @@
                 color1Input.value = template.color1 || '#3498db';
                 color2Input.value = template.color2 || '#2573a7';
                 iconTypeSelect.value = template.iconType || 'none';
+                fontSizeInput.value = template.fontSize || '13';
+                fontSizeValue.textContent = template.fontSize || '13';
+                iconSizeInput.value = template.iconSize || '20';
+                iconSizeValue.textContent = template.iconSize || '20';
                 
                 if (template.iconType === 'custom') {
                     customIconGroup.style.display = 'block';
@@ -898,6 +1026,175 @@
                 showNotification('Erro ao importar o arquivo: ' + error.message, 'error');
                 console.error('Erro ao importar:', error);
             }
+        }
+
+        // Função para carregar modelos do servidor
+        function loadFromServer() {
+            const fileUrl = serverFileUrlInput.value.trim();
+            if (!fileUrl) {
+                showNotification('Por favor, digite o nome do arquivo .btn', 'error');
+                return;
+            }
+            
+            showNotification('Carregando modelos do servidor...', 'warning');
+            
+            // Fazer requisição para o arquivo .btn no servidor
+            fetch(fileUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro ao carregar o arquivo: ${response.status} ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    try {
+                        // Tentar analisar o conteúdo como JSON
+                        const templates = JSON.parse(data);
+                        
+                        // Verificar se é um array de modelos
+                        if (!Array.isArray(templates)) {
+                            throw new Error('Formato de arquivo inválido. Deve ser um array de modelos.');
+                        }
+                        
+                        // Salvar os modelos no localStorage
+                        localStorage.setItem('buttonTemplates', JSON.stringify(templates));
+                        
+                        // Recarregar a interface
+                        loadTemplates();
+                        updateTemplateSelect();
+                        
+                        showNotification(`${templates.length} modelo(s) carregado(s) do servidor com sucesso!`, 'success');
+                    } catch (error) {
+                        showNotification('Erro ao processar o arquivo: ' + error.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showNotification('Erro ao carregar do servidor: ' + error.message, 'error');
+                    console.error('Erro:', error);
+                });
+        }
+
+        // Função para exportar todos os modelos
+        function exportAllTemplates() {
+            const savedTemplates = JSON.parse(localStorage.getItem('buttonTemplates') || '[]');
+            
+            if (savedTemplates.length === 0) {
+                showNotification('Não há modelos para exportar!', 'warning');
+                return;
+            }
+            
+            // Criar um arquivo HTML com todos os modelos
+            let htmlContent = `<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Botões Personalizados</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #3498db;
+            margin-bottom: 30px;
+        }
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .button-item {
+            text-align: center;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        .button-preview {
+            margin-bottom: 10px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .button-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .button-code {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Botões Personalizados Exportados</h1>
+        <div class="buttons-grid">
+`;
+
+            savedTemplates.forEach(template => {
+                let iconHTML = '';
+                
+                if (template.iconType === 'custom' && template.customIconUrl) {
+                    iconHTML = `<img src="${template.customIconUrl}" alt="${template.text}" style="height:${template.iconSize || '20'}px;margin-right:6px">`;
+                } else if (template.iconType !== 'none' && template.iconType !== 'custom') {
+                    iconHTML = `<i class="fas fa-${template.iconType}" style="font-size:${template.iconSize || '20'}px;margin-right:6px"></i>`;
+                }
+                
+                const buttonHTML = `<a href="${template.link}" style="display:flex;align-items:center;justify-content:center;width:140px;height:35px;border-radius:5px;font:600 ${template.fontSize || '13'}px 'Segoe UI',sans-serif;text-decoration:none;color:white;box-shadow:0 3px 6px rgba(0,0,0,0.15);background:linear-gradient(145deg,${template.color1},${template.color2});border:1px solid rgba(255,255,255,0.2);transition:all 0.3s;box-sizing:border-box">${iconHTML}${template.text}</a>`;
+                
+                htmlContent += `
+            <div class="button-item">
+                <div class="button-preview">
+                    ${buttonHTML}
+                </div>
+                <div class="button-name">${template.name}</div>
+                <div class="button-code">${buttonHTML.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+            </div>
+`;
+            });
+
+            htmlContent += `
+        </div>
+    </div>
+</body>
+</html>`;
+
+            // Criar e baixar o arquivo
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'botoes_personalizados.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification(`Todos os modelos exportados com sucesso!`, 'success');
         }
 
         // Função para selecionar todos os templates
@@ -937,12 +1234,12 @@
                 let iconHTML = '';
                 
                 if (template.iconType === 'custom' && template.customIconUrl) {
-                    iconHTML = `<img src="${template.customIconUrl}" alt="${template.text}" style="height:20px;margin-right:6px">`;
+                    iconHTML = `<img src="${template.customIconUrl}" alt="${template.text}" style="height:${template.iconSize || '20'}px;margin-right:6px">`;
                 } else if (template.iconType !== 'none' && template.iconType !== 'custom') {
-                    iconHTML = `<i class="fas fa-${template.iconType}" style="margin-right:6px"></i>`;
+                    iconHTML = `<i class="fas fa-${template.iconType}" style="font-size:${template.iconSize || '20'}px;margin-right:6px"></i>`;
                 }
                 
-                htmlCode += `    <a href="${template.link}" style="display:flex;align-items:center;justify-content:center;width:140px;height:35px;border-radius:5px;font:600 13px 'Segoe UI',sans-serif;text-decoration:none;color:white;box-shadow:0 3px 6px rgba(0,0,0,0.15);background:linear-gradient(145deg,${template.color1},${template.color2});border:1px solid rgba(255,255,255,0.2);transition:all 0.3s;box-sizing:border-box">\n`;
+                htmlCode += `    <a href="${template.link}" style="display:flex;align-items:center;justify-content:center;width:140px;height:35px;border-radius:5px;font:600 ${template.fontSize || '13'}px 'Segoe UI',sans-serif;text-decoration:none;color:white;box-shadow:0 3px 6px rgba(0,0,0,0.15);background:linear-gradient(145deg,${template.color1},${template.color2});border:1px solid rgba(255,255,255,0.2);transition:all 0.3s;box-sizing:border-box">\n`;
                 htmlCode += `        ${iconHTML}${template.text}\n`;
                 htmlCode += `    </a>\n`;
             });
